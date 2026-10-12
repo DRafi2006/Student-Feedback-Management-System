@@ -23,6 +23,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [notification, setNotification] = useState('');
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
 
   const fetchDashboardData = useCallback(async (isRefresh = false) => {
     const token = localStorage.getItem('adminToken');
@@ -120,7 +121,7 @@ const Dashboard = () => {
             </span>
           </div>
           <h1 style={{ fontSize: '2rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span>Institutional Feedback & Evaluation Analytics</span>
+            <span>CDU Institutional Feedback & Evaluation Analytics</span>
           </h1>
         </div>
 
@@ -320,7 +321,7 @@ const Dashboard = () => {
 
           {stats?.subjectBreakdown && stats.subjectBreakdown.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {stats.subjectBreakdown.slice(0, 4).map((sub, idx) => (
+              {(showAllSubjects ? stats.subjectBreakdown : stats.subjectBreakdown.slice(0, 4)).map((sub, idx) => (
                 <div
                   key={idx}
                   style={{
@@ -349,6 +350,17 @@ const Dashboard = () => {
                   </div>
                 </div>
               ))}
+
+              {stats.subjectBreakdown.length > 4 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllSubjects(!showAllSubjects)}
+                  className="btn btn-secondary"
+                  style={{ padding: '0.45rem', fontSize: '0.8rem', marginTop: '0.25rem' }}
+                >
+                  {showAllSubjects ? 'Show Top 4 Courses' : `Show All Courses (${stats.subjectBreakdown.length})`}
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>

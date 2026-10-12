@@ -752,3 +752,66 @@ input, select, textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* Print Styles for QR Classroom Poster */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: #000000 !important;
+  }
+
+  .navbar,
+  .hero-pill,
+  .btn,
+  button,
+  .glass-card:not(#printable-qr-poster),
+  h1,
+  p:not(#printable-qr-poster p),
+  div:not(#printable-qr-poster):not(#printable-qr-poster *) {
+    box-shadow: none !important;
+  }
+
+  /* Hide everything on page except printable poster */
+  .navbar,
+  .hero-section,
+  .nav-links,
+  .app-container > .navbar,
+  .app-container > main > div > div:not(#printable-qr-poster):not(:has(#printable-qr-poster)) {
+    display: none !important;
+  }
+
+  #printable-qr-poster {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    border-radius: 16px !important;
+    padding: 3rem 2rem !important;
+    max-width: 500px !important;
+    margin: 2rem auto !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+  }
+
+  #printable-qr-poster h2 {
+    color: #000000 !important;
+    font-size: 2rem !important;
+  }
+
+  #printable-qr-poster p {
+    color: #333333 !important;
+  }
+
+  #printable-qr-poster div {
+    color: #000000 !important;
+  }
+
+  #printable-qr-poster button {
+    display: none !important;
+  }
+
+  #generated-qrcode-svg {
+    border: 1px solid #E2E8F0 !important;
+  }
+}
+

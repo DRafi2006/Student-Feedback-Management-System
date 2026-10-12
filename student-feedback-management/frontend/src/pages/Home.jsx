@@ -21,16 +21,16 @@ const Home = () => {
       <section className="hero-section">
         <div className="hero-pill">
           <Award size={16} />
-          <span>Academic Quality Assurance Portal</span>
+          <span>Chaitanya Deemed to be University (CDU)</span>
         </div>
 
         <h1 className="hero-title">
-          College <span className="hero-title-gradient">Student Feedback</span> & Evaluation System
+          CDU <span className="hero-title-gradient">Student Feedback</span> & Faculty Evaluation System
         </h1>
 
         <p className="hero-desc">
-          An official, secure digital platform for students to evaluate semester courses and faculty teaching pedagogy.
-          Empowering academic excellence through real-time feedback and actionable institutional analytics.
+          Official, seamless digital evaluation portal for Chaitanya Deemed to be University (CDU).
+          Students can evaluate semester courses and faculty teaching pedagogy directly via classroom QR codes on any smartphone.
         </p>
 
         {/* Action Portal Cards */}

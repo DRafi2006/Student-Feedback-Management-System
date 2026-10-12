@@ -55,12 +55,42 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const cleanStudentId = studentId.trim().toUpperCase();
+    const cleanSubject = subject.trim();
+
+    // Check if feedback already exists for this student and subject
+    const existingFeedback = await Feedback.findOne({
+      studentId: cleanStudentId,
+      subject: cleanSubject,
+    });
+
+    if (existingFeedback) {
+      existingFeedback.studentName = studentName.trim();
+      existingFeedback.department = department.trim();
+      existingFeedback.semester = String(semester).trim();
+      existingFeedback.facultyName = facultyName.trim();
+      existingFeedback.overallRating = numOverall;
+      existingFeedback.teachingQuality = numTeaching;
+      existingFeedback.communication = numComm;
+      existingFeedback.courseUnderstanding = numCourse;
+      existingFeedback.comments = comments ? comments.trim() : '';
+
+      const updatedFeedback = await existingFeedback.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Feedback updated successfully.',
+        feedback: updatedFeedback,
+        isUpdate: true,
+      });
+    }
+
     const feedbackDoc = new Feedback({
-      studentId: studentId.trim().toUpperCase(),
+      studentId: cleanStudentId,
       studentName: studentName.trim(),
       department: department.trim(),
       semester: String(semester).trim(),
-      subject: subject.trim(),
+      subject: cleanSubject,
       facultyName: facultyName.trim(),
       overallRating: numOverall,
       teachingQuality: numTeaching,
@@ -75,6 +105,7 @@ router.post('/', async (req, res) => {
       success: true,
       message: 'Feedback submitted successfully.',
       feedback: savedFeedback,
+      isUpdate: false,
     });
   } catch (error) {
     console.error('Submit Feedback error:', error);
@@ -82,6 +113,24 @@ router.post('/', async (req, res) => {
       message: 'Failed to submit feedback',
       error: error.message,
     });
+  }
+});
+
+// @desc    Get evaluations submitted by a student
+// @route   GET /api/feedback/student/:studentId
+// @access  Public / Student
+router.get('/student/:studentId', async (req, res) => {
+  try {
+    const studentId = req.params.studentId.trim().toUpperCase();
+    const list = await Feedback.find({ studentId }).sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      count: list.length,
+      feedback: list,
+    });
+  } catch (error) {
+    console.error('Fetch student feedback error:', error);
+    res.status(500).json({ message: 'Failed to retrieve student feedback history' });
   }
 });
 

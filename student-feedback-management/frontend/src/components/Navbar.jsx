@@ -30,7 +30,7 @@ const Navbar = () => {
           <div className="nav-logo-icon">
             <GraduationCap size={22} />
           </div>
-          <span>College Evaluation Portal</span>
+          <span>CDU Feedback Portal</span>
         </Link>
 
         <div className="nav-links">
@@ -42,13 +42,13 @@ const Navbar = () => {
             <span>Home</span>
           </Link>
 
-          {/* QR Generator Link */}
+          {/* QR Generator & Scanner Link */}
           <Link
             to="/qr-generator"
             className={`nav-link ${location.pathname === '/qr-generator' ? 'active' : ''}`}
           >
             <QrCode size={17} />
-            <span>QR Generator</span>
+            <span>QR Hub & Scanner</span>
           </Link>
 
           {/* Student Links */}

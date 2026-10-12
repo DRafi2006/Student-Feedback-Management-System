@@ -150,27 +150,133 @@ app.get('/', (req, res) => {
 
 const os = require('os');
 
-// Helper to get local network IPv4 address
-const getLocalNetworkIp = () => {
+// Helper to get all and best local network IPv4 addresses
+const getAllNetworkIps = () => {
   const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
+  const list = [];
+  let bestIp = '127.0.0.1';
+
+  // Order priority: Wi-Fi / WLAN first, then Ethernet / LAN, then others
+  const sortedNames = Object.keys(interfaces).sort((a, b) => {
+    const aLower = a.toLowerCase();
+    const bLower = b.toLowerCase();
+    const isAWifi = aLower.includes('wi-fi') || aLower.includes('wlan') || aLower.includes('wireless');
+    const isBWifi = bLower.includes('wi-fi') || bLower.includes('wlan') || bLower.includes('wireless');
+    if (isAWifi && !isBWifi) return -1;
+    if (!isAWifi && isBWifi) return 1;
+
+    const isAEth = aLower.includes('ethernet') || aLower.includes('eth');
+    const isBEth = bLower.includes('ethernet') || bLower.includes('eth');
+    if (isAEth && !isBEth) return -1;
+    if (!isAEth && isBEth) return 1;
+
+    return 0;
+  });
+
+  for (const name of sortedNames) {
+    const ifaces = interfaces[name] || [];
+    for (const iface of ifaces) {
       if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
+        list.push({ name, ip: iface.address });
+        if (bestIp === '127.0.0.1') {
+          bestIp = iface.address;
+        }
       }
     }
   }
-  return '127.0.0.1';
+
+  return { bestIp, allIps: list };
+};
+
+const getLocalNetworkIp = () => {
+  const { bestIp } = getAllNetworkIps();
+  return bestIp;
 };
 
 app.get('/api/network-ip', (req, res) => {
-  const ip = getLocalNetworkIp();
+  const { bestIp, allIps } = getAllNetworkIps();
   res.json({
     success: true,
-    ip,
-    frontendUrl: `http://${ip}:3000`,
-    backendUrl: `http://${ip}:5000`,
+    ip: bestIp,
+    allIps,
+    frontendUrl: `http://${bestIp}:3000`,
+    backendUrl: `http://${bestIp}:5000`,
+    tunnelUrl: activeTunnelUrl,
   });
+});
+
+// Automatic Zero-Config Public Tunnel (Allows phone scanning anywhere on 4G/5G without same Wi-Fi)
+let activeTunnel = null;
+let activeTunnelUrl = null;
+
+const startPublicTunnel = () => {
+  return new Promise((resolve) => {
+    if (activeTunnelUrl) {
+      return resolve({ success: true, url: activeTunnelUrl, active: true });
+    }
+
+    const { spawn } = require('child_process');
+    try {
+      const child = spawn('ssh', [
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', 'ServerAliveInterval=30',
+        '-R', '80:localhost:3000',
+        'nokey@localhost.run',
+      ]);
+
+      activeTunnel = child;
+      let urlFound = false;
+
+      const handler = (data) => {
+        const text = data.toString();
+        const match = text.match(/https:\/\/[a-zA-Z0-9-]+\.lhr\.life/);
+        if (match && !urlFound) {
+          urlFound = true;
+          activeTunnelUrl = match[0];
+          console.log(`🌐 Public Mobile Tunnel Online: ${activeTunnelUrl}`);
+          resolve({ success: true, url: activeTunnelUrl, active: true });
+        }
+      };
+
+      child.stdout.on('data', handler);
+      child.stderr.on('data', handler);
+
+      child.on('close', () => {
+        activeTunnel = null;
+        activeTunnelUrl = null;
+      });
+
+      child.on('error', (err) => {
+        console.warn('Tunnel process error:', err.message);
+        resolve({ success: false, message: err.message });
+      });
+
+      setTimeout(() => {
+        if (!urlFound) {
+          resolve({
+            success: false,
+            message: 'Tunnel initialization timed out. You can manually enter a public/deployed URL.',
+          });
+        }
+      }, 15000);
+    } catch (e) {
+      resolve({ success: false, message: e.message });
+    }
+  });
+};
+
+app.get('/api/tunnel', async (req, res) => {
+  const result = await startPublicTunnel();
+  res.json(result);
+});
+
+app.post('/api/tunnel/stop', (req, res) => {
+  if (activeTunnel) {
+    activeTunnel.kill();
+    activeTunnel = null;
+    activeTunnelUrl = null;
+  }
+  res.json({ success: true, message: 'Tunnel stopped' });
 });
 
 app.get('/api/health', (req, res) => {

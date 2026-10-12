@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { GraduationCap, AlertCircle, CheckCircle2, ArrowRight, Lock, User, Building, Calendar, UserPlus } from 'lucide-react';
 
 const StudentLogin = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // Determine where to navigate after authentication
+  const getDestinationUrl = () => {
+    const fromQuery = searchParams.get('redirect');
+    if (fromQuery) return fromQuery;
+    const fromSession = sessionStorage.getItem('pendingFeedbackRedirect');
+    if (fromSession) {
+      sessionStorage.removeItem('pendingFeedbackRedirect');
+      return fromSession;
+    }
+    return '/feedback';
+  };
 
   // Login form state
   const [studentId, setStudentId] = useState('');
@@ -41,9 +54,15 @@ const StudentLogin = () => {
       });
 
       if (response.data && response.data.token) {
+        // Clear any old admin session to avoid token confusion
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminInfo');
+
         localStorage.setItem('studentToken', response.data.token);
         localStorage.setItem('studentInfo', JSON.stringify(response.data.student));
-        navigate('/feedback');
+
+        const destination = getDestinationUrl();
+        navigate(destination);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -78,9 +97,15 @@ const StudentLogin = () => {
       });
 
       if (response.data && response.data.token) {
+        // Clear any old admin session
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminInfo');
+
         localStorage.setItem('studentToken', response.data.token);
         localStorage.setItem('studentInfo', JSON.stringify(response.data.student));
-        navigate('/feedback');
+
+        const destination = getDestinationUrl();
+        navigate(destination);
       }
     } catch (error) {
       console.error('Registration error:', error);

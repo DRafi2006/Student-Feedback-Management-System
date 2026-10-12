@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import StudentLogin from './pages/StudentLogin';
@@ -9,6 +9,19 @@ import Dashboard from './pages/Dashboard';
 import QRGenerator from './pages/QRGenerator';
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // If user visits root / with feedback parameters, automatically redirect to /feedback
+    if (location.pathname === '/') {
+      const searchParams = new URLSearchParams(location.search);
+      if (searchParams.get('faculty') || searchParams.get('subject')) {
+        navigate(`/feedback${location.search}`, { replace: true });
+      }
+    }
+  }, [location, navigate]);
+
   return (
     <div className="app-container">
       <Navbar />

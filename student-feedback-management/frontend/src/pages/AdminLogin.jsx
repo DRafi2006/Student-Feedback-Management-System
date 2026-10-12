@@ -28,6 +28,10 @@ const AdminLogin = () => {
       });
 
       if (response.data && response.data.token) {
+        // Clear any old student session to avoid navbar clutter
+        localStorage.removeItem('studentToken');
+        localStorage.removeItem('studentInfo');
+
         localStorage.setItem('adminToken', response.data.token);
         localStorage.setItem('adminInfo', JSON.stringify(response.data.admin));
 
