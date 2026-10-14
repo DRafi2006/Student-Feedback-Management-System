@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ShieldCheck, AlertCircle, ArrowRight, Lock, UserCheck } from 'lucide-react';
+import { ShieldCheck, AlertCircle, ArrowRight, Lock, UserCheck, Eye, EyeOff, WifiOff } from 'lucide-react';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [serverOnline, setServerOnline] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Check backend health
+  useEffect(() => {
+    let isMounted = true;
+    const checkServer = async () => {
+      try {
+        await axios.get('/api/health', { timeout: 3000 });
+        if (isMounted) setServerOnline(true);
+      } catch (err) {
+        if (isMounted) setServerOnline(false);
+      }
+    };
+    checkServer();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -39,10 +58,17 @@ const AdminLogin = () => {
       }
     } catch (error) {
       console.error('Admin Login error:', error);
-      const msg =
-        error.response?.data?.message ||
-        'Invalid admin credentials. Please verify username and password.';
-      setErrorMessage(msg);
+      if (!error.response || error.code === 'ERR_NETWORK' || error.response.status === 504 || error.response.status === 502) {
+        setServerOnline(false);
+        setErrorMessage(
+          '⚠️ Cannot connect to backend server. Please verify backend is running on http://localhost:5000 (cd student-feedback-management/backend && npm start).'
+        );
+      } else {
+        const msg =
+          error.response?.data?.message ||
+          'Invalid admin credentials. Please verify username and password.';
+        setErrorMessage(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -73,6 +99,34 @@ const AdminLogin = () => {
             Secure access to college-wide feedback analytics & records
           </p>
         </div>
+
+        {/* Server Offline Alert Banner */}
+        {!serverOnline && (
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.75rem 1rem',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              gap: '0.65rem',
+              alignItems: 'flex-start',
+              color: '#FCA5A5',
+              fontSize: '0.85rem',
+              lineHeight: 1.45,
+            }}
+          >
+            <WifiOff size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#EF4444' }} />
+            <div>
+              <strong style={{ color: '#FFFFFF' }}>Backend Server is Offline:</strong>
+              <div>Requests to <code>http://localhost:5000</code> cannot be reached.</div>
+              <div style={{ marginTop: '4px', fontSize: '0.78rem', opacity: 0.9 }}>
+                To start: <code>cd student-feedback-management/backend &amp;&amp; npm start</code>
+              </div>
+            </div>
+          </div>
+        )}
 
         {errorMessage && (
           <div className="alert alert-error">
@@ -127,14 +181,35 @@ const AdminLogin = () => {
               />
               <input
                 id="adminPassword"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="form-input"
-                style={{ paddingLeft: '38px' }}
+                style={{ paddingLeft: '38px', paddingRight: '40px' }}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                }}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 

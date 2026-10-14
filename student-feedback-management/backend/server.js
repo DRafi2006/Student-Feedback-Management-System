@@ -107,11 +107,7 @@ const autoSeedIfEmpty = async () => {
   }
 };
 
-// Connect to Database and auto-seed
-connectDB().then(() => {
-  autoSeedIfEmpty();
-});
-
+// Express application instance
 const app = express();
 
 // Middleware
@@ -300,8 +296,25 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 const localIp = getLocalNetworkIp();
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on:`);
-  console.log(`   - Local:   http://localhost:${PORT}`);
-  console.log(`   - Network: http://${localIp}:${PORT}`);
-});
+// Start Server after Database is completely initialized & seeded
+const startServer = async () => {
+  try {
+    console.log('⏳ Connecting to Database and verifying seed data...');
+    await connectDB();
+    await autoSeedIfEmpty();
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log('\n========================================================');
+      console.log('🚀 Student Feedback Management Backend is READY!');
+      console.log(`   - Local URL:    http://localhost:${PORT}`);
+      console.log(`   - Network URL:  http://${localIp}:${PORT}`);
+      console.log(`   - Health Check: http://localhost:${PORT}/api/health`);
+      console.log('========================================================\n');
+    });
+  } catch (err) {
+    console.error('❌ Failed to start server:', err);
+    process.exit(1);
+  }
+};
+
+startServer();

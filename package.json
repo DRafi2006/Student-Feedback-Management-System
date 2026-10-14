@@ -1,0 +1,25 @@
+{
+  "name": "student-feedback-management-system",
+  "version": "1.0.0",
+  "description": "Comprehensive College Student Feedback & Faculty Evaluation System with Roll No Authentication, QR Codes, and Real-time Analytics",
+  "scripts": {
+    "start": "node student-feedback-management/backend/server.js",
+    "backend": "cd student-feedback-management/backend && npm start",
+    "dev:backend": "cd student-feedback-management/backend && npm run dev",
+    "frontend": "cd student-feedback-management/frontend && npm run dev",
+    "seed": "node student-feedback-management/backend/seed.js",
+    "install:all": "npm --prefix student-feedback-management/backend install && npm --prefix student-feedback-management/frontend install"
+  },
+  "keywords": [
+    "student-feedback",
+    "college-evaluation",
+    "faculty-review",
+    "react",
+    "express",
+    "mongodb",
+    "qr-code-generator",
+    "jwt-authentication"
+  ],
+  "author": "Rafik",
+  "license": "MIT"
+}

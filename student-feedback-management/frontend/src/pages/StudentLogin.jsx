@@ -1,12 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { GraduationCap, AlertCircle, CheckCircle2, ArrowRight, Lock, User, Building, Calendar, UserPlus } from 'lucide-react';
+import {
+  GraduationCap,
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
+  Lock,
+  User,
+  Building,
+  Calendar,
+  UserPlus,
+  Eye,
+  EyeOff,
+  WifiOff,
+} from 'lucide-react';
 
 const StudentLogin = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [serverOnline, setServerOnline] = useState(true);
+
+  // Check backend server health on mount
+  useEffect(() => {
+    let isMounted = true;
+    const checkServerHealth = async () => {
+      try {
+        await axios.get('/api/health', { timeout: 3000 });
+        if (isMounted) setServerOnline(true);
+      } catch (err) {
+        if (isMounted) setServerOnline(false);
+      }
+    };
+    checkServerHealth();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Determine where to navigate after authentication
   const getDestinationUrl = () => {
@@ -49,7 +81,7 @@ const StudentLogin = () => {
 
     try {
       const response = await axios.post('/api/students/login', {
-        studentId: studentId.trim(),
+        studentId: studentId.trim().toUpperCase(),
         password,
       });
 
@@ -66,10 +98,17 @@ const StudentLogin = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      const msg =
-        error.response?.data?.message ||
-        'Authentication failed. Please check your College Roll No and Password.';
-      setErrorMessage(msg);
+      if (!error.response || error.code === 'ERR_NETWORK' || error.response.status === 504 || error.response.status === 502) {
+        setServerOnline(false);
+        setErrorMessage(
+          '⚠️ Cannot connect to backend server. Please verify the backend is running on http://localhost:5000 (cd student-feedback-management/backend && npm start).'
+        );
+      } else {
+        const msg =
+          error.response?.data?.message ||
+          'Invalid College Roll No or Password. Please check your credentials or click a sample roll number below.';
+        setErrorMessage(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -89,7 +128,7 @@ const StudentLogin = () => {
 
     try {
       const response = await axios.post('/api/students/register', {
-        studentId: regStudentId.trim(),
+        studentId: regStudentId.trim().toUpperCase(),
         name: regName.trim(),
         password: regPassword,
         department: regDepartment,
@@ -109,10 +148,17 @@ const StudentLogin = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      const msg =
-        error.response?.data?.message ||
-        'Registration failed. Roll number may already exist.';
-      setErrorMessage(msg);
+      if (!error.response || error.code === 'ERR_NETWORK' || error.response.status === 504 || error.response.status === 502) {
+        setServerOnline(false);
+        setErrorMessage(
+          '⚠️ Cannot connect to backend server. Please ensure the backend is running on http://localhost:5000.'
+        );
+      } else {
+        const msg =
+          error.response?.data?.message ||
+          'Registration failed. Roll number may already exist.';
+        setErrorMessage(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -127,7 +173,7 @@ const StudentLogin = () => {
 
   return (
     <div className="auth-wrapper">
-      <div className="auth-card" style={{ maxWidth: isRegistering ? '520px' : '450px' }}>
+      <div className="auth-card" style={{ maxWidth: isRegistering ? '520px' : '460px' }}>
         <div className="auth-header">
           <div className="auth-icon-circle">
             <GraduationCap size={28} />
@@ -141,6 +187,34 @@ const StudentLogin = () => {
               : 'Sign in with your College Roll Number to submit semester feedback'}
           </p>
         </div>
+
+        {/* Server Offline Alert Banner */}
+        {!serverOnline && (
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.75rem 1rem',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              gap: '0.65rem',
+              alignItems: 'flex-start',
+              color: '#FCA5A5',
+              fontSize: '0.85rem',
+              lineHeight: 1.45,
+            }}
+          >
+            <WifiOff size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#EF4444' }} />
+            <div>
+              <strong style={{ color: '#FFFFFF' }}>Backend Server is Offline:</strong>
+              <div>Requests to <code>http://localhost:5000</code> cannot be reached.</div>
+              <div style={{ marginTop: '4px', fontSize: '0.78rem', opacity: 0.9 }}>
+                To start: <code>cd student-feedback-management/backend &amp;&amp; npm start</code>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tab Switcher: Sign In vs Register */}
         <div
@@ -254,14 +328,35 @@ const StudentLogin = () => {
                 />
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="form-input"
-                  style={{ paddingLeft: '38px' }}
+                  style={{ paddingLeft: '38px', paddingRight: '40px' }}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '4px',
+                  }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -420,12 +515,30 @@ const StudentLogin = () => {
         {/* Demo Seed Accounts Quick Selector */}
         {!isRegistering && (
           <div className="seed-helper">
-            <div className="seed-helper-title">⚡ Quick Sample Roll Numbers (Click to auto-fill)</div>
+            <div
+              className="seed-helper-title"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <span>⚡ Quick Sample Roll Numbers</span>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--primary-light)',
+                  fontWeight: 600,
+                  background: 'rgba(99, 102, 241, 0.15)',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                }}
+              >
+                Password: student123
+              </span>
+            </div>
             <div className="seed-chips">
               <button
                 type="button"
                 onClick={() => handleQuickFill('N24H01A0338', 'student123')}
                 className="seed-chip"
+                title="Click to auto-fill Mechanical Engineering student credentials"
               >
                 N24H01A0338 (Mech - Sem 4)
               </button>
@@ -433,6 +546,7 @@ const StudentLogin = () => {
                 type="button"
                 onClick={() => handleQuickFill('N24H01B0338', 'student123')}
                 className="seed-chip"
+                title="Click to auto-fill Computer Science student credentials"
               >
                 N24H01B0338 (CSE - Sem 6)
               </button>
@@ -440,6 +554,7 @@ const StudentLogin = () => {
                 type="button"
                 onClick={() => handleQuickFill('N24H01A0501', 'student123')}
                 className="seed-chip"
+                title="Click to auto-fill Electronics student credentials"
               >
                 N24H01A0501 (ECE - Sem 6)
               </button>
